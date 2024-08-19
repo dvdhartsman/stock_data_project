@@ -7,7 +7,7 @@ import plotly.io
 from plotly.subplots import make_subplots
 
 
-def plot_stock_ta(ticker:str, start_date:str="2024-01-01", end_date:str="2024-08-18") -> None:
+def plot_stock_ta(ticker:str, start_date:str="2024-01-01", end_date:str="2024-08-18", interval:str="1d") -> None:
     """Plot a given asset's price action between specified dates. Also includes: Bollinger Bands, 20/50/100 Day Moving Averages, 
     and subplot showing the RSI - a measure of whether a stock is over-bought or over-sold
 
@@ -20,12 +20,16 @@ def plot_stock_ta(ticker:str, start_date:str="2024-01-01", end_date:str="2024-08
     Returns:
     -------------------
     None: plotly.graph_objects.Figure | a plotly figure with 2 subplots, one showing price action and technical indicators, the other RSI
+
+    Errors:
+    -------------------
+    Certain intervals are only available for recent periods of time per the yfinance API, keep shorter intervals < 60 days
     
-    ex: plot_stock_ta("GOOGL", "2024-01-01", "2024-08-01")
+    ex: plot_stock_ta("GOOGL", "2024-01-01", "2024-08-01", interval="60m")
     """
     
 
-    data = yf.download(ticker, start=start_date, end=end_date)
+    data = yf.download(ticker, start=start_date, end=end_date, interval=interval)
 
     # Create different technical indicators
     data["50-Day MA"] = data["Close"].rolling(50).mean()
