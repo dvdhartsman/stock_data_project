@@ -156,7 +156,7 @@ def plot_rel_performance(ticker:str, start:str="2023-01-01", end:str=pd.Timestam
     # Row #1: Relative Performance
     fig.add_trace(go.Scatter(x=rel.index, y=rel["Relative Performance"], name="Relative Performance", mode="lines"), 
                   row=1, col=1)
-    fig.update_traces(hovertemplate="Date: %{x}<br> Relative Performance: %{y:.2%}<extra></extra>")
+    fig.update_traces(hovertemplate="Date: %{x}<br> Approx. Relative Performance: %{y:.2%}<extra></extra>")
     
     fig.add_trace(go.Scatter(x=[rel.index[0], rel.index[-1]], y = [rel["Relative Performance"].iloc[0], rel["Relative Performance"].iloc[0]],
                              name = "Equal Performance", line={"dash":"dot"}))
