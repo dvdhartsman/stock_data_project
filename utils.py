@@ -94,6 +94,97 @@ def plot_stock_ta(ticker:str, start_date:str="2024-01-01", end_date:str="2024-08
     return fig
 
 
+
+def plot_rel_performance(ticker:str, start:str="2023-01-01", end:str=pd.Timestamp.today()):
+    """ 
+    Plot the relative performance of a stock vs the S&P, normalized so the initial value will be equal to 1,
+    Data accessed via yfinance and transformed within the function body
+
+    Args:
+    ---------------------
+    ticker:str | stock symbol, case-insensitive
+    start:str | date to begin analysis
+    end:str | date to end analysis
+    
+    Returns:
+    ---------------------
+    None:fig | plotly figure showing relative performance of stock to the index
+    
+    Raises:
+    ---------------------
+    IndexError: single positional indexer is out-of-bounds if ticker is not a valid stock symbol
+
+    Ex: plot_rel_performance("NVDA", start="2024-07-01", end="2024-08-24")
+    """
+    # from utils import download_and_format
+
+    ticker = ticker.upper()
+    
+    if isinstance(end, pd.Timestamp):
+        end_label = end.date()
+    else:
+        end_label = end
+
+    # Transform data into useful format
+    df_a = download_and_format(ticker + ",^GSPC", start=start, end=end)
+    rel = df_a.query("Ticker == '^GSPC'")[["Ticker", "Date", "Close"]].merge(
+        df_a.query("Ticker == @ticker")[["Ticker", "Date", "Close"]], on="Date", suffixes=("_S&P", f"_{ticker}"))
+    rel.set_index("Date", inplace=True)
+    rel["Relative Performance"] = (rel[f"Close_{ticker}"] / rel["Close_S&P"] / (rel[f"Close_{ticker}"].iloc[0] / rel["Close_S&P"].iloc[0])\
+                                   - 1)  # Making this value a percentage of relative performance handled by "tickformat"
+    
+    # Create the figure
+    fig = make_subplots(rows=2, cols=2, subplot_titles=[
+        f"Relative Performance of {ticker} to the S&P 500<br><sup>From {start} to {end} | A Value of 1 Signifies Parity</sup>",
+                                                    f"{ticker} Price Action", "S&P Price Action"], shared_xaxes=True,
+                       specs=[[{"colspan": 2}, None],  # First row spans both columns
+               [{}, {}]])
+    
+    # Row #1: Relative Performance
+    fig.add_trace(go.Scatter(x=rel.index, y=rel["Relative Performance"], name="Relative Performance", mode="lines"), 
+                  row=1, col=1)
+    fig.update_traces(hovertemplate="Date: %{x}<br> Relative Performance: %{y:.2%}<extra></extra>")
+    
+    fig.add_trace(go.Scatter(x=[rel.index[0], rel.index[-1]], y = [rel["Relative Performance"].iloc[0], rel["Relative Performance"].iloc[0]],
+                             name = "Equal Performance", line={"dash":"dot"}))
+    
+    
+    # Row #2 Col#1: Chosen Stock Historical Performance 
+    fig.add_trace(go.Scatter(x=df_a.query("Ticker == @ticker")["Date"], y=df_a.query("Ticker == @ticker")["Close"],
+                            name=ticker, mode="lines"), row=2, col=1)
+    fig.update_traces(row=2, col=1, hovertemplate="Date: %{x}<br> Price: %{y:$,.2f}<extra></extra>")
+    
+    
+    # Row #2 Col#2: S&P Historical Performance 
+    fig.add_trace(go.Scatter(x=df_a.query("Ticker == '^GSPC'")["Date"], y=df_a.query("Ticker == '^GSPC'")["Close"],
+                            name="S&P 500", mode="lines"), row=2, col=2)
+    fig.update_traces(row=2, col=2, hovertemplate="Date: %{x}<br> Value: %{y:,.2f}<extra></extra>")
+    
+    
+    # Formatting
+    fig.update_layout(yaxis = {"showticklabels":True, "tickformat":".2%"},
+                      yaxis2 = {"showticklabels":True, "tickformat":"$,.2f"},
+                     height=550,
+                     template="plotly_dark",
+                    yaxis_title="Relative Performance",
+                    yaxis2_title=f"{ticker} Price",
+                    yaxis3_title="S&P 500 Value"
+    )
+    
+    # One bottom-centered X-label
+    fig.add_annotation(
+        text="Date",  # The text of the x-axis label
+        xref="paper", yref="paper",  # Reference to the entire figure
+        x=0.5, y=-0.15,  # Position the label at the bottom center
+        showarrow=False,
+        font={"size":16, "weight":"normal"}  # Adjust the font size if needed
+    )
+    
+
+    return fig
+
+
+
 # Function to create the table of stock profiles
 def create_daily_stock_prices_table():
     """
