@@ -16,6 +16,19 @@ import configparser
 import ssl
 
 
+def download_and_format(tickers:str, start:str="2023-01-01", end:str=pd.Timestamp.today(), interval:str="1d"):
+    """Download and format the data by stacking the df to avoid multi-indexes"""
+    
+    # Download using yfinance API
+    df = yf.download(tickers, start=start, end=end, interval=interval)
+    
+    # Formatting
+    df.sort_index(axis=1, inplace=True)
+    df = df.stack(future_stack=True).reset_index()  # future_stack required due to future deprecation
+    df.columns.name = None
+    df = df.dropna(subset="Open")
+    return df
+
 def plot_stock_ta(ticker:str, start_date:str="2024-01-01", end_date:str="2024-08-18", interval:str="1d") -> None:
     """Plot a given asset's price action between specified dates. Also includes: Bollinger Bands, 20/50/100 Day Moving Averages, 
     and subplot showing the RSI - a measure of whether a stock is over-bought or over-sold
